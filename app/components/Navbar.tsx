@@ -7,16 +7,7 @@ import Image from 'next/image';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Removed scroll effect for consistent navbar
 
   const navItems = [
     { name: 'About Us', path: '/about' },
@@ -31,11 +22,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-black/90 backdrop-blur-md py-3 shadow-lg' : 'bg-transparent py-4'
-      }`}
-    >
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm shadow-lg py-2">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <div className="flex-shrink-0 z-50">
@@ -43,9 +30,8 @@ export default function Navbar() {
             <Image
               src="/Logo.png"
               alt="BubblebitX Logo"
-              width={scrolled ? 48 : 64}
-              height={scrolled ? 48 : 64}
-              className={`transition-all duration-300 ${scrolled ? 'scale-90' : 'scale-100'}`}
+              width={40}
+              height={40}
               priority
             />
           </Link>
@@ -57,7 +43,7 @@ export default function Navbar() {
             <Link
               key={index}
               href={item.path}
-              className="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors relative group"
+              className="px-5 py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors relative group"
             >
               {item.name}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-300 group-hover:w-full"></span>

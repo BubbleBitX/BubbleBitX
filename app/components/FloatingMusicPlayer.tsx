@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Volume2, VolumeX, Music, Hand } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,131 +31,48 @@ const musicTracks = [
 
 const FloatingMusicPlayer = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isInitialized = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showPointer, setShowPointer] = useState(false);
   const currentTrackIndex = useRef(new Date().getDay() % musicTracks.length);
-  const currentTrack = musicTracks[currentTrackIndex.current];
+  const [currentTrack, setCurrentTrack] = useState(musicTracks[currentTrackIndex.current]);
 
-  const handlePointerDisplay = () => {
-    const timer = setTimeout(() => {
-      if (!isPlaying) {
-        setShowPointer(true);
-        const hideTimer = setTimeout(() => setShowPointer(false), 10000);
-        return () => clearTimeout(hideTimer);
-      }
-    }, 1500);
-    return () => clearTimeout(timer);
-  };
-
-  useEffect(handlePointerDisplay, [isPlaying]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || audioRef.current) return;
-
-    const audio = new Audio(currentTrack.src);
-    audio.volume = 0.15;
-    audio.loop = true;
-    audioRef.current = audio;
-
-    const saved = JSON.parse(localStorage.getItem('musicPlayback') || '{}');
-    const isSameTrack = saved.trackIndex === currentTrackIndex.current;
-
-    const initializePlayback = async () => {
-      try {
-        if (saved.isPlaying) {
-          if (isSameTrack && saved.currentTime) {
-            audio.currentTime = saved.currentTime;
-          }
-          await audio.play();
-          setIsPlaying(true);
-        } else if (isSameTrack && saved.currentTime) {
-          audio.currentTime = saved.currentTime;
-        }
-      } catch (error) {
-        console.error('Error initializing audio playback:', error);
-      }
-    };
-
-    initializePlayback();
-    isInitialized.current = true;
-
-    const savePlayback = () => {
-      if (!audioRef.current) return;
-      localStorage.setItem('musicPlayback', JSON.stringify({
-        isPlaying,
-        currentTime: audioRef.current.currentTime,
-        trackIndex: currentTrackIndex.current,
-        lastUpdated: Date.now(),
-      }));
-    };
-
-    window.addEventListener('beforeunload', savePlayback);
-    return () => {
-      window.removeEventListener('beforeunload', savePlayback);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [isPlaying]);
-
-  useEffect(() => {
+  // Handle track end
+  const handleTrackEnd = useCallback(() => {
+    currentTrackIndex.current = (currentTrackIndex.current + 1) % musicTracks.length;
+    setCurrentTrack(musicTracks[currentTrackIndex.current]);
     const audio = audioRef.current;
-    if (!audio || !isInitialized.current) return;
+    if (audio) {
+      audio.src = musicTracks[currentTrackIndex.current].src;
+      audio.play().catch(console.error);
+    }
+  }, [musicTracks]);
 
-    const prevTime = audio.currentTime;
-    const wasPlaying = isPlaying;
-
-    const updateTrack = async () => {
-      try {
-        audio.pause();
-        audio.src = musicTracks[currentTrackIndex.current].src;
-
-        await new Promise<void>((resolve) => {
-          audio.oncanplay = () => {
-            if (wasPlaying) {
-              audio.play().catch(console.error);
-            } else {
-              audio.currentTime = prevTime;
-            }
-            resolve();
-          };
-        });
-
-        localStorage.setItem('musicPlayback', JSON.stringify({
-          isPlaying: wasPlaying,
-          currentTime: wasPlaying ? 0 : prevTime,
-          trackIndex: currentTrackIndex.current,
-          lastUpdated: Date.now(),
-        }));
-      } catch (error) {
-        console.error('Error updating track:', error);
-      }
-    };
-
-    updateTrack();
-  }, [currentTrackIndex.current, isPlaying]);
-
-  const togglePlay = async () => {
+  // Toggle play/pause
+  const togglePlay = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     try {
       if (isPlaying) {
-        audio.pause();
+        await audio.pause();
         setIsPlaying(false);
       } else {
         await audio.play();
         setIsPlaying(true);
       }
-      localStorage.setItem('musicPlaying', String(!isPlaying));
+      // Save playback state
+      localStorage.setItem('musicPlayback', JSON.stringify({
+        isPlaying: !isPlaying,
+        currentTime: audio.currentTime,
+        trackIndex: currentTrackIndex.current,
+        lastUpdated: Date.now(),
+      }));
     } catch (error) {
       console.error('Playback error:', error);
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
         const notification = document.createElement('div');
-        notification.className = 'fixed bottom-24 right-6 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-50 animate-fade-in';
+        notification.className = 'fixed bottom-24 right-6 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-50';
         notification.textContent = 'Click here to enable audio';
         document.body.appendChild(notification);
         setTimeout(() => {
@@ -164,7 +81,86 @@ const FloatingMusicPlayer = () => {
         }, 3000);
       }
     }
-  };
+  }, [isPlaying]);
+
+  // Handle pointer display for user guidance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isPlaying) {
+        setShowPointer(true);
+        const hideTimer = setTimeout(() => setShowPointer(false), 10000);
+        return () => clearTimeout(hideTimer);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isPlaying]);
+
+  // Initialize audio and set up event listeners
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Create audio element
+    const audio = new Audio();
+    audio.volume = 0.15;
+    audio.loop = true;
+    audioRef.current = audio;
+
+    // Load saved playback state if available
+    const savedPlayback = localStorage.getItem('musicPlayback');
+    if (savedPlayback) {
+      try {
+        const { isPlaying: savedIsPlaying, currentTime, trackIndex, lastUpdated } = JSON.parse(savedPlayback);
+        
+        // Only restore if it was saved within the last 30 minutes
+        if (Date.now() - lastUpdated < 30 * 60 * 1000) {
+          currentTrackIndex.current = trackIndex % musicTracks.length;
+          setCurrentTrack(musicTracks[currentTrackIndex.current]);
+          audio.src = musicTracks[currentTrackIndex.current].src;
+          
+          if (savedIsPlaying) {
+            audio.currentTime = currentTime || 0;
+            audio.play().catch(console.error);
+            setIsPlaying(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing saved playback state:', error);
+      }
+    } else {
+      // Initialize with first track if no saved state
+      audio.src = musicTracks[currentTrackIndex.current].src;
+    }
+
+    // Set up event listeners
+    audio.addEventListener('ended', handleTrackEnd);
+
+    // Cleanup function
+    return () => {
+      audio.removeEventListener('ended', handleTrackEnd);
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, [handleTrackEnd]);
+
+  // Save playback state before unload
+  useEffect(() => {
+    const savePlayback = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      
+      localStorage.setItem('musicPlayback', JSON.stringify({
+        isPlaying,
+        currentTime: audio.currentTime,
+        trackIndex: currentTrackIndex.current,
+        lastUpdated: Date.now(),
+      }));
+    };
+
+    window.addEventListener('beforeunload', savePlayback);
+    return () => {
+      window.removeEventListener('beforeunload', savePlayback);
+    };
+  }, [isPlaying]);
 
   // Inject animation style
   useEffect(() => {

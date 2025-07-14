@@ -126,6 +126,7 @@ export default function TestimonialsSection() {
                   
                   <div className="flex items-center mt-8 pt-6 border-t border-gray-700/50 group-hover:border-pink-500/30 transition-colors">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={testimonial.avatar} 
                         alt={testimonial.author}

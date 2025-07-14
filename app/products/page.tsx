@@ -1,4 +1,4 @@
-import { Download, Sparkles, Zap, FileText, Gamepad2, Bot, Check } from 'lucide-react';
+import { Download, Sparkles, Zap, Gamepad2, Bot, Check } from 'lucide-react';
 
 export default function ProductsPage() {
   const products = [

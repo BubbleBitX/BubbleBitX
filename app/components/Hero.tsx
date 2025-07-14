@@ -34,7 +34,7 @@ export default function Hero() {
             whileTap={{ scale: 0.98 }}
             className="bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white px-10 py-4 rounded-full text-lg font-medium flex items-center mx-auto gap-2 group"
           >
-            LET'S MAKE BUBBLES
+            LET&apos;S MAKE BUBBLES
             <span className="group-hover:translate-x-1 transition-transform">
               <ArrowRight className="w-5 h-5" />
             </span>

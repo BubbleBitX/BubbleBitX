@@ -29,156 +29,115 @@ const musicTracks = [
   },
 ];
 
-let audio: HTMLAudioElement | null = null;
-
 const FloatingMusicPlayer = () => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isInitialized = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showPointer, setShowPointer] = useState(false);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const isInitialized = useRef(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(new Date().getDay() % musicTracks.length);
+  const currentTrack = musicTracks[currentTrackIndex];
 
-  useEffect(() => {
-    let hideTimer: NodeJS.Timeout;
+  const handlePointerDisplay = () => {
     const timer = setTimeout(() => {
       if (!isPlaying) {
         setShowPointer(true);
-        hideTimer = setTimeout(() => setShowPointer(false), 10000);
+        const hideTimer = setTimeout(() => setShowPointer(false), 10000);
+        return () => clearTimeout(hideTimer);
       }
     }, 1500);
+    return () => clearTimeout(timer);
+  };
 
-    return () => {
-      clearTimeout(timer);
-      if (hideTimer) clearTimeout(hideTimer);
+  useEffect(handlePointerDisplay, [isPlaying]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || audioRef.current) return;
+
+    const audio = new Audio(currentTrack.src);
+    audio.volume = 0.15;
+    audio.loop = true;
+    audioRef.current = audio;
+
+    const saved = JSON.parse(localStorage.getItem('musicPlayback') || '{}');
+    const isSameTrack = saved.trackIndex === currentTrackIndex;
+
+    if (saved.isPlaying) {
+      if (isSameTrack && saved.currentTime) audio.currentTime = saved.currentTime;
+      audio.play().then(() => setIsPlaying(true)).catch(console.log);
+    } else if (isSameTrack && saved.currentTime) {
+      audio.currentTime = saved.currentTime;
+    }
+
+    isInitialized.current = true;
+
+    const savePlayback = () => {
+      if (!audioRef.current) return;
+      localStorage.setItem('musicPlayback', JSON.stringify({
+        isPlaying,
+        currentTime: audioRef.current.currentTime,
+        trackIndex: currentTrackIndex,
+        lastUpdated: Date.now(),
+      }));
     };
-  }, [isPlaying]);
+
+    window.addEventListener('beforeunload', savePlayback);
+    return () => window.removeEventListener('beforeunload', savePlayback);
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !isInitialized.current) return;
+
+    const prevTime = audio.currentTime;
+    const wasPlaying = isPlaying;
+
+    audio.pause();
+    audio.src = musicTracks[currentTrackIndex].src;
+
+    audio.oncanplay = () => {
+      if (wasPlaying) audio.play().catch(console.log);
+      else audio.currentTime = prevTime;
+
+      localStorage.setItem('musicPlayback', JSON.stringify({
+        isPlaying: wasPlaying,
+        currentTime: wasPlaying ? 0 : prevTime,
+        trackIndex: currentTrackIndex,
+        lastUpdated: Date.now(),
+      }));
+    };
+  }, [currentTrackIndex]);
 
   const togglePlay = async () => {
+    const audio = audioRef.current;
     if (!audio) return;
 
     try {
       if (isPlaying) {
         audio.pause();
-        localStorage.setItem('musicPlaying', 'false');
         setIsPlaying(false);
       } else {
         await audio.play();
-        localStorage.setItem('musicPlaying', 'true');
         setIsPlaying(true);
       }
+      localStorage.setItem('musicPlaying', String(!isPlaying));
     } catch (error) {
       console.error('Playback error:', error);
-      if (
-        error instanceof DOMException &&
-        error.name === 'NotAllowedError'
-      ) {
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
         const notification = document.createElement('div');
-        notification.className =
-          'fixed bottom-24 right-6 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-50 animate-fade-in';
+        notification.className = 'fixed bottom-24 right-6 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-50 animate-fade-in';
         notification.textContent = 'Click here to enable audio';
         document.body.appendChild(notification);
         setTimeout(() => {
-          notification.classList.add(
-            'opacity-0',
-            'transition-opacity',
-            'duration-500'
-          );
+          notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
           setTimeout(() => notification.remove(), 500);
         }, 3000);
       }
     }
   };
 
-  const handleButtonClick = async () => {
-    setShowPointer(false);
-    await togglePlay();
-  };
-
+  // Inject animation style
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!audio) {
-      const todayIndex = new Date().getDay() % musicTracks.length;
-      setCurrentTrackIndex(todayIndex);
-      audio = new Audio(musicTracks[todayIndex].src);
-      audio.volume = 0.15;
-      audio.loop = true;
-
-      const savedPlayback = JSON.parse(
-        localStorage.getItem('musicPlayback') || '{}'
-      );
-      const isSameTrack = savedPlayback.trackIndex === todayIndex;
-
-      if (savedPlayback.isPlaying) {
-        if (isSameTrack && savedPlayback.currentTime) {
-          audio.currentTime = savedPlayback.currentTime;
-        }
-        audio
-          .play()
-          .then(() => setIsPlaying(true))
-          .catch(e => console.log('Autoplay prevented:', e));
-      } else if (isSameTrack && savedPlayback.currentTime) {
-        audio.currentTime = savedPlayback.currentTime;
-      }
-
-      isInitialized.current = true;
-    }
-
-    const handleBeforeUnload = () => {
-      if (audio) {
-        localStorage.setItem(
-          'musicPlayback',
-          JSON.stringify({
-            isPlaying,
-            currentTime: audio.currentTime,
-            trackIndex: currentTrackIndex,
-            lastUpdated: Date.now(),
-          })
-        );
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!audio || !isInitialized.current) return;
-
-    const wasPlaying = isPlaying;
-    audio.pause();
-
-    const currentTime = audio.currentTime;
-
-    audio.src = musicTracks[currentTrackIndex].src;
-
-    audio.oncanplay = () => {
-      if (wasPlaying) {
-        audio?.play().catch(e => console.log('Playback failed:', e));
-      }
-
-      localStorage.setItem(
-        'musicPlayback',
-        JSON.stringify({
-          isPlaying: wasPlaying,
-          currentTime: wasPlaying ? 0 : currentTime,
-          trackIndex: currentTrackIndex,
-          lastUpdated: Date.now(),
-        })
-      );
-
-      audio!.oncanplay = null;
-    };
-  }, [currentTrackIndex]);
-
-  const currentTrack = musicTracks[currentTrackIndex];
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     const style = document.createElement('style');
     style.textContent = `
       @keyframes fadeIn {
@@ -190,7 +149,6 @@ const FloatingMusicPlayer = () => {
       }
     `;
     document.head.appendChild(style);
-
     return () => {
       document.head.removeChild(style);
     };
@@ -211,30 +169,19 @@ const FloatingMusicPlayer = () => {
               <div className="relative">
                 <motion.div
                   className="absolute -top-6 -right-2"
-                  animate={{
-                    rotate: [-10, 10, -10],
-                    y: [0, -5, 0],
-                  }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.5,
-                    ease: 'easeInOut',
-                  }}
+                  animate={{ rotate: [-10, 10, -10], y: [0, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
                 >
                   <Hand className="w-8 h-8 text-yellow-400" />
                 </motion.div>
                 <motion.div
-                  className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow-lg"
+                  className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg"
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
-                  transition={{
-                    type: 'spring',
-                    damping: 10,
-                    stiffness: 300,
-                  }}
+                  transition={{ type: 'spring', damping: 10, stiffness: 300 }}
                 >
                   Play Bubble!
-                  <div className="absolute -bottom-2 right-3 w-4 h-4 bg-gradient-to-r from-pink-500 to-purple-600 transform rotate-45"></div>
+                  <div className="absolute -bottom-2 right-3 w-4 h-4 bg-gradient-to-r from-pink-500 to-purple-600 transform rotate-45" />
                 </motion.div>
               </div>
             </motion.div>
@@ -242,8 +189,10 @@ const FloatingMusicPlayer = () => {
         </AnimatePresence>
 
         <motion.button
-          ref={buttonRef}
-          onClick={handleButtonClick}
+          onClick={() => {
+            setShowPointer(false);
+            togglePlay();
+          }}
           onHoverStart={() => {
             setIsHovered(true);
             setShowPointer(false);
@@ -252,37 +201,21 @@ const FloatingMusicPlayer = () => {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           className={`relative w-14 h-14 rounded-full flex items-center justify-center 
-            bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30
-            focus:outline-none ${isPlaying ? 'ring-2 ring-white ring-opacity-50' : ''}`}
+            bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg 
+            ${isPlaying ? 'ring-2 ring-white ring-opacity-50' : ''}`}
           aria-label={isPlaying ? 'Pause music' : 'Play music'}
         >
-          <div
-            className={`absolute inset-0 transition-opacity duration-300 ${
-              isPlaying ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            <Image
-              src="/bubble.png"
-              alt="Music"
-              width={24}
-              height={24}
-              className="object-contain"
-            />
+          <Image
+            src="/bubble.png"
+            alt="Music"
+            width={24}
+            height={24}
+            className={`absolute inset-0 m-auto transition-opacity duration-300 ${isPlaying ? 'opacity-0' : 'opacity-100'}`}
+          />
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying || isHovered ? 'opacity-100' : 'opacity-0'}`}>
+            {isPlaying ? <Volume2 size={24} className="text-white" /> : <VolumeX size={24} className="text-white" />}
           </div>
-          <div
-            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
-              isPlaying || isHovered ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {isPlaying ? (
-              <Volume2 size={24} className="text-white" />
-            ) : (
-              <VolumeX size={24} className="text-white" />
-            )}
-          </div>
-          {isPlaying && (
-            <div className="absolute inset-0 rounded-full bg-pink-400 animate-ping opacity-20"></div>
-          )}
+          {isPlaying && <div className="absolute inset-0 rounded-full bg-pink-400 animate-ping opacity-20" />}
         </motion.button>
 
         <AnimatePresence>

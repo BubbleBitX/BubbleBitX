@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Menu, X, Instagram, Facebook, Linkedin } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // ✅ Use scroll handler once — without referencing state inside handler
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
@@ -15,7 +16,7 @@ export default function Navbar() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []); // 👈 Only run once
+  }, []);
 
   const navItems = [
     { name: 'About Us', path: '/about' },
@@ -24,9 +25,9 @@ export default function Navbar() {
   ];
 
   const socialLinks = [
-    { icon: <Instagram size={20} />, label: 'Instagram', href: '#', external: false },
-    { icon: <Facebook size={20} />, label: 'Facebook', href: '#', external: false },
-    { icon: <Linkedin size={20} />, label: 'LinkedIn', href: 'https://www.linkedin.com/company/bubblebitx/posts/?feedView=all', external: true }
+    { icon: <Instagram size={20} />, href: '#', external: false },
+    { icon: <Facebook size={20} />, href: '#', external: false },
+    { icon: <Linkedin size={20} />, href: 'https://www.linkedin.com/company/bubblebitx/posts/?feedView=all', external: true }
   ];
 
   return (
@@ -38,26 +39,29 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <div className="flex-shrink-0 z-50">
-          <a href="/" className="block">
-            <img
+          <Link href="/" className="block">
+            <Image
               src="/Logo.png"
               alt="BubblebitX Logo"
-              className={`h-12 md:h-16 transition-all duration-300 ${scrolled ? 'scale-90' : 'scale-100'}`}
+              width={scrolled ? 48 : 64}
+              height={scrolled ? 48 : 64}
+              className={`transition-all duration-300 ${scrolled ? 'scale-90' : 'scale-100'}`}
+              priority
             />
-          </a>
+          </Link>
         </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-1">
           {navItems.map((item, index) => (
-            <a
+            <Link
               key={index}
               href={item.path}
               className="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors relative group"
             >
               {item.name}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -69,7 +73,6 @@ export default function Navbar() {
               href={link.href}
               target={link.external ? '_blank' : '_self'}
               rel={link.external ? 'noopener noreferrer' : ''}
-              aria-label={link.label}
               className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
             >
               {link.icon}
@@ -98,14 +101,14 @@ export default function Navbar() {
       >
         <div className="flex flex-col h-full justify-center items-center space-y-8 px-6">
           {navItems.map((item, index) => (
-            <a
+            <Link
               key={index}
               href={item.path}
               onClick={() => setIsMenuOpen(false)}
               className="text-2xl font-medium text-gray-300 hover:text-white transition-colors"
             >
               {item.name}
-            </a>
+            </Link>
           ))}
           <div className="flex space-x-6 pt-8">
             {socialLinks.map((link, index) => (
@@ -114,7 +117,6 @@ export default function Navbar() {
                 href={link.href}
                 target={link.external ? '_blank' : '_self'}
                 rel={link.external ? 'noopener noreferrer' : ''}
-                aria-label={link.label}
                 className="p-3 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
               >
                 {link.icon}

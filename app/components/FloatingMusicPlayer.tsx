@@ -46,7 +46,7 @@ const FloatingMusicPlayer = () => {
       audio.src = musicTracks[currentTrackIndex.current].src;
       audio.play().catch(console.error);
     }
-  }, [musicTracks]);
+  }, []);
 
   // Toggle play/pause
   const togglePlay = useCallback(async () => {

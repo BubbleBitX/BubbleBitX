@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Menu, X, Instagram, Facebook, Linkedin } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';

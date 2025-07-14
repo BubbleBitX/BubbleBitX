@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Play } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 const BubbleButton = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -71,7 +71,7 @@ const BubbleButton = () => {
         transition={{ type: 'spring', stiffness: 400, damping: 10 }}
         className="flex items-center justify-center gap-2 w-full"
       >
-        LET'S MAKE BUBBLES
+        LET&apos;S MAKE BUBBLES
         <span className="group-hover:translate-x-1 transition-transform">
           <ArrowRight className="w-5 h-5" />
         </span>

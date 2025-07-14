@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useAnimation } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Star, Check, Users, Code, ThumbsUp } from "lucide-react";
 
 const stats = [
@@ -41,9 +41,14 @@ const stats = [
 
 export default function StatsSection() {
   const controls = useAnimation();
+  const [hasMounted, setHasMounted] = useState(false);
   
   useEffect(() => {
+    setHasMounted(true);
+    
     const handleScroll = () => {
+      if (!hasMounted) return;
+      
       const y = window.scrollY;
       controls.start({
         y: -y * 0.03,
@@ -51,9 +56,18 @@ export default function StatsSection() {
       });
     };
     
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [controls]);
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(() => {
+      window.addEventListener('scroll', handleScroll);
+      // Trigger initial position
+      handleScroll();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [controls, hasMounted]);
 
   return (
     <section className="relative py-20 overflow-hidden">

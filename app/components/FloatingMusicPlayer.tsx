@@ -58,28 +58,16 @@ const FloatingMusicPlayer = () => {
         await audio.pause();
         setIsPlaying(false);
       } else {
+        // Only set up audio source and play if not already set
+        if (!audio.src) {
+          audio.src = musicTracks[currentTrackIndex.current].src;
+          audio.volume = 0.5; // Start with 50% volume
+        }
         await audio.play();
         setIsPlaying(true);
       }
-      // Save playback state
-      localStorage.setItem('musicPlayback', JSON.stringify({
-        isPlaying: !isPlaying,
-        currentTime: audio.currentTime,
-        trackIndex: currentTrackIndex.current,
-        lastUpdated: Date.now(),
-      }));
     } catch (error) {
-      console.error('Playback error:', error);
-      if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-24 right-6 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-50';
-        notification.textContent = 'Click here to enable audio';
-        document.body.appendChild(notification);
-        setTimeout(() => {
-          notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-          setTimeout(() => notification.remove(), 500);
-        }, 3000);
-      }
+      console.error('Error toggling playback:', error);
     }
   }, [isPlaying]);
 
@@ -95,49 +83,33 @@ const FloatingMusicPlayer = () => {
     return () => clearTimeout(timer);
   }, [isPlaying]);
 
-  // Initialize audio and set up event listeners
+  // Initialize audio on component mount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Create audio element
     const audio = new Audio();
-    audio.volume = 0.15;
-    audio.loop = true;
     audioRef.current = audio;
 
-    // Load saved playback state if available
-    const savedPlayback = localStorage.getItem('musicPlayback');
-    if (savedPlayback) {
-      try {
-        const { isPlaying: savedIsPlaying, currentTime, trackIndex, lastUpdated } = JSON.parse(savedPlayback);
-        
-        // Only restore if it was saved within the last 30 minutes
-        if (Date.now() - lastUpdated < 30 * 60 * 1000) {
-          currentTrackIndex.current = trackIndex % musicTracks.length;
-          setCurrentTrack(musicTracks[currentTrackIndex.current]);
-          audio.src = musicTracks[currentTrackIndex.current].src;
-          
-          if (savedIsPlaying) {
-            audio.currentTime = currentTime || 0;
-            audio.play().catch(console.error);
-            setIsPlaying(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing saved playback state:', error);
-      }
-    } else {
-      // Initialize with first track if no saved state
-      audio.src = musicTracks[currentTrackIndex.current].src;
-    }
-
-    // Set up event listeners
+    // Handle track end
     audio.addEventListener('ended', handleTrackEnd);
 
-    // Cleanup function
+    // Set initial track source when user interacts
+    const handleFirstInteraction = () => {
+      if (!audio.src) {
+        audio.src = musicTracks[currentTrackIndex.current].src;
+        audio.volume = 0.5;
+      }
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+
+    // Listen for first user interaction
+    document.addEventListener('click', handleFirstInteraction, { once: true });
+    document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+
     return () => {
-      audio.removeEventListener('ended', handleTrackEnd);
       audio.pause();
+      audio.removeEventListener('ended', handleTrackEnd);
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
       audioRef.current = null;
     };
   }, [handleTrackEnd]);

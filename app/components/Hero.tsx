@@ -1,7 +1,84 @@
 'use client';
 
-import { motion } from "framer-motion";
-import { ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Play } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+
+const BubbleButton = () => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [bubbles, setBubbles] = useState<Array<{id: number, x: number, y: number, size: number}>>([]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const createBubble = (e: React.MouseEvent) => {
+    if (!buttonRef.current) return;
+    
+    const rect = buttonRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setBubbles(prev => [
+      ...prev.slice(-4), // Keep only the last 4 bubbles
+      {
+        id: Date.now(),
+        x,
+        y,
+        size: Math.random() * 20 + 10
+      }
+    ]);
+  };
+
+  return (
+    <button
+      ref={buttonRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onMouseMove={createBubble}
+      className="relative overflow-hidden bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white px-8 py-4 rounded-full text-lg font-medium flex items-center gap-2 group"
+    >
+      <AnimatePresence>
+        {bubbles.map((bubble) => (
+          <motion.span
+            key={bubble.id}
+            initial={{
+              x: bubble.x - bubble.size / 2,
+              y: bubble.y - bubble.size / 2,
+              opacity: 1,
+              scale: 0,
+            }}
+            animate={{
+              x: bubble.x - bubble.size / 2,
+              y: bubble.y - bubble.size / 2,
+              scale: [0, 1.5, 0],
+              opacity: [0, 0.6, 0],
+            }}
+            transition={{
+              duration: 0.8,
+              ease: 'easeOut'
+            }}
+            style={{
+              width: bubble.size,
+              height: bubble.size,
+              position: 'absolute',
+              background: 'rgba(255, 255, 255, 0.6)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
+            }}
+          />
+        ))}
+      </AnimatePresence>
+      <motion.span 
+        animate={{ scale: isHovered ? 1.1 : 1 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+        className="flex items-center justify-center gap-2 w-full"
+      >
+        LET'S MAKE BUBBLES
+        <span className="group-hover:translate-x-1 transition-transform">
+          <ArrowRight className="w-5 h-5" />
+        </span>
+      </motion.span>
+    </button>
+  );
+};
 
 export default function Hero() {
   return (
@@ -30,16 +107,9 @@ export default function Hero() {
               Ping us any time here to make your solutions and businesses stand out and make your dream exceptional!
             </p>
             
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white px-10 py-4 rounded-full text-lg font-medium flex items-center mx-auto gap-2 group"
-            >
-              LET&apos;S MAKE BUBBLES
-              <span className="group-hover:translate-x-1 transition-transform">
-                <ArrowRight className="w-5 h-5" />
-              </span>
-            </motion.button>
+            <div className="relative flex justify-center">
+              <BubbleButton />
+            </div>
           </motion.div>
           </div>
         </div>

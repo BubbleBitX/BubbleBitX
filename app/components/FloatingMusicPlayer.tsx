@@ -35,8 +35,8 @@ const FloatingMusicPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showPointer, setShowPointer] = useState(false);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(new Date().getDay() % musicTracks.length);
-  const currentTrack = musicTracks[currentTrackIndex];
+  const currentTrackIndex = useRef(new Date().getDay() % musicTracks.length);
+  const currentTrack = musicTracks[currentTrackIndex.current];
 
   const handlePointerDisplay = () => {
     const timer = setTimeout(() => {
@@ -60,15 +60,25 @@ const FloatingMusicPlayer = () => {
     audioRef.current = audio;
 
     const saved = JSON.parse(localStorage.getItem('musicPlayback') || '{}');
-    const isSameTrack = saved.trackIndex === currentTrackIndex;
+    const isSameTrack = saved.trackIndex === currentTrackIndex.current;
 
-    if (saved.isPlaying) {
-      if (isSameTrack && saved.currentTime) audio.currentTime = saved.currentTime;
-      audio.play().then(() => setIsPlaying(true)).catch(console.log);
-    } else if (isSameTrack && saved.currentTime) {
-      audio.currentTime = saved.currentTime;
-    }
+    const initializePlayback = async () => {
+      try {
+        if (saved.isPlaying) {
+          if (isSameTrack && saved.currentTime) {
+            audio.currentTime = saved.currentTime;
+          }
+          await audio.play();
+          setIsPlaying(true);
+        } else if (isSameTrack && saved.currentTime) {
+          audio.currentTime = saved.currentTime;
+        }
+      } catch (error) {
+        console.error('Error initializing audio playback:', error);
+      }
+    };
 
+    initializePlayback();
     isInitialized.current = true;
 
     const savePlayback = () => {
@@ -76,14 +86,20 @@ const FloatingMusicPlayer = () => {
       localStorage.setItem('musicPlayback', JSON.stringify({
         isPlaying,
         currentTime: audioRef.current.currentTime,
-        trackIndex: currentTrackIndex,
+        trackIndex: currentTrackIndex.current,
         lastUpdated: Date.now(),
       }));
     };
 
     window.addEventListener('beforeunload', savePlayback);
-    return () => window.removeEventListener('beforeunload', savePlayback);
-  }, []);
+    return () => {
+      window.removeEventListener('beforeunload', savePlayback);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -92,21 +108,35 @@ const FloatingMusicPlayer = () => {
     const prevTime = audio.currentTime;
     const wasPlaying = isPlaying;
 
-    audio.pause();
-    audio.src = musicTracks[currentTrackIndex].src;
+    const updateTrack = async () => {
+      try {
+        audio.pause();
+        audio.src = musicTracks[currentTrackIndex.current].src;
 
-    audio.oncanplay = () => {
-      if (wasPlaying) audio.play().catch(console.log);
-      else audio.currentTime = prevTime;
+        await new Promise<void>((resolve) => {
+          audio.oncanplay = () => {
+            if (wasPlaying) {
+              audio.play().catch(console.error);
+            } else {
+              audio.currentTime = prevTime;
+            }
+            resolve();
+          };
+        });
 
-      localStorage.setItem('musicPlayback', JSON.stringify({
-        isPlaying: wasPlaying,
-        currentTime: wasPlaying ? 0 : prevTime,
-        trackIndex: currentTrackIndex,
-        lastUpdated: Date.now(),
-      }));
+        localStorage.setItem('musicPlayback', JSON.stringify({
+          isPlaying: wasPlaying,
+          currentTime: wasPlaying ? 0 : prevTime,
+          trackIndex: currentTrackIndex.current,
+          lastUpdated: Date.now(),
+        }));
+      } catch (error) {
+        console.error('Error updating track:', error);
+      }
     };
-  }, [currentTrackIndex]);
+
+    updateTrack();
+  }, [currentTrackIndex.current, isPlaying]);
 
   const togglePlay = async () => {
     const audio = audioRef.current;

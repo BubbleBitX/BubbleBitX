@@ -1,4 +1,4 @@
-import { Code, Download, Sparkles, Zap, FileText, Gamepad2, Bot, Check } from 'lucide-react';
+import { Download, Sparkles, Zap, FileText, Gamepad2, Bot, Check } from 'lucide-react';
 
 export default function ProductsPage() {
   const products = [
@@ -51,7 +51,7 @@ export default function ProductsPage() {
       ],
       cta: {
         text: 'Stay Tuned',
-        icon: <Code className="w-5 h-5 ml-2" />,
+        icon: <Zap className="w-5 h-5 ml-2" />,
         link: '#subscribe'
       },
       highlight: false

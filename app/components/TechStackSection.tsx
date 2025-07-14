@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Code, Cpu, Database, Globe, Smartphone, Palette, Layers, ChevronRight, Zap, ArrowRight } from "lucide-react";
+import { Cpu, Database, Globe, Smartphone, Palette, Layers, Zap, ArrowRight } from "lucide-react";
 
 const techStack = [
   { 
@@ -134,7 +134,7 @@ export default function TechStackSection() {
             Ready to start your project?
           </div>
           <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Let's build something amazing together
+            Let&apos;s build something amazing together
           </h3>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
             Get in touch with our team to discuss how we can help bring your ideas to life

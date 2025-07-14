@@ -1,4 +1,4 @@
-import { Sparkles, Lightbulb, Award, Users, Rocket, Code, Shield, Heart } from 'lucide-react';
+import { Lightbulb, Award, Users, Rocket, Shield } from 'lucide-react';
 
 export default function AboutPage() {
   const stats = [
@@ -44,7 +44,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            We're a passionate team of innovators, creators, and problem-solvers dedicated to building the future of technology.
+            We&apos;re a passionate team of innovators, creators, and problem-solvers dedicated to building the future of technology.
           </p>
         </div>
       </section>
@@ -58,7 +58,7 @@ export default function AboutPage() {
             </div>
             <h2 className="text-4xl font-bold">Crafting Digital Excellence Since 2023</h2>
             <p className="text-lg text-gray-300 leading-relaxed">
-              At BubblebitX, we're passionate about creating innovative solutions that make a difference. 
+              At BubblebitX, we&apos;re passionate about creating innovative solutions that make a difference. 
               Founded in 2023, our team of experts has been at the forefront of digital transformation, 
               helping businesses of all sizes achieve their goals through cutting-edge technology.
             </p>
@@ -171,7 +171,7 @@ export default function AboutPage() {
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to start your project?</h2>
             <p className="text-xl text-gray-300 mb-8">
-              Let's work together to bring your ideas to life with our expertise and innovative solutions.
+              Let&apos;s work together to bring your ideas to life with our expertise and innovative solutions.
             </p>
             <a 
               href="/contact" 

@@ -1,9 +1,7 @@
 'use client';
 
-import { motion, useAnimation } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { useEffect } from "react";
-import { Star, Quote } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Star, Quote } from "lucide-react";
 
 interface Testimonial {
   id: number;
@@ -73,21 +71,6 @@ const testimonials: Testimonial[] = [
 ];
 
 export default function TestimonialsSection() {
-  const controls = useAnimation();
-  
-  useEffect(() => {
-    const handleScroll = () => {
-      const y = window.scrollY;
-      controls.start({
-        y: -y * 0.05,
-        transition: { type: "spring", stiffness: 100, damping: 30 }
-      });
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [controls]);
-
   return (
     <section id="testimonials" className="relative py-24 overflow-hidden">
       {/* Background elements */}
@@ -139,7 +122,7 @@ export default function TestimonialsSection() {
                 
                 <div className="relative z-10">
                   <Quote className="w-8 h-8 text-pink-400/30 mb-4" />
-                  <p className="text-gray-300 mb-6 text-lg leading-relaxed">"{testimonial.quote}"</p>
+                  <p className="text-gray-300 mb-6 text-lg leading-relaxed">&ldquo;{testimonial.quote}&rdquo;</p>
                   
                   <div className="flex items-center mt-8 pt-6 border-t border-gray-700/50 group-hover:border-pink-500/30 transition-colors">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center overflow-hidden">

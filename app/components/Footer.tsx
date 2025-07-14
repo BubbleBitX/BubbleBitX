@@ -17,7 +17,7 @@ export default function Footer() {
               </span>
             </h3>
             <p className="text-gray-400">
-              We create innovative solutions that make a difference in people's lives through technology.
+              We create innovative solutions that make a difference in people&apos;s lives through technology.
             </p>
             <div className="flex space-x-4">
               <a 

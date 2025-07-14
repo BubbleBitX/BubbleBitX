@@ -1,4 +1,4 @@
-import { Code, Globe, Smartphone, Paintbrush, Cloud, ShoppingCart, BarChart } from 'lucide-react';
+import { Globe, Smartphone, Paintbrush, Cloud, ShoppingCart, BarChart } from 'lucide-react';
 
 export default function ServicesPage() {
   const services = [
